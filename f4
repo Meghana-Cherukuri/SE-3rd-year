@@ -1,2 +1,52 @@
-helloo
-hii
+Exp: SNS and SQS
+step 1: create dynamodb table
+step 2: create sns topics (3 types customer,delivery,sms update)
+step 3:create sqs queue
+step 4:create lambda function
+step 5: provide access to iam role for lambda fun(snsfullaccess,dynamodbfullaccess)
+
+In lambda :
+import boto3
+
+def lambda_handler(event, context):
+    # Initialize clients
+    sns = boto3.client('sns')
+    dynamodb = boto3.resource('dynamodb')
+    
+    # Table
+    table = dynamodb.Table('canteenorders')
+
+    # Store order in DynamoDB
+    order = {
+        'OrderID': 'ORD123',
+        'Customer': 'John',
+        'Status': 'Preparing',
+        'Item': 'Burger'
+    }
+    table.put_item(Item=order)
+
+    # Publish to Customer
+    sns.publish(
+        TopicArn='arn:aws:sns:eu-north-1:876820568095:OwnerToCustomer_Topic',
+        Message='Your order has been accepted and is being prepared.',
+        Subject='Order Update'
+    )
+
+    # Publish to Delivery Boy
+    sns.publish(
+        TopicArn='arn:aws:sns:eu-north-1:876820568095:OwnerToDelivery_Topic',
+        Message='Pick up Order ORD123 from kitchen.',
+        Subject='Delivery Assignment'
+    )
+
+    # Send Feedback SMS
+    sns.publish(
+        TopicArn='arn:aws:sns:eu-north-1:876820568095:FeedbackSMS_Topic',
+        Message='Your order is delivered. Please rate your experience.',
+    )
+
+    return {
+        'statusCode': 200,
+        'body': 'Order processed and notifications sent.'
+    }
+
