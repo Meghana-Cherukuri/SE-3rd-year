@@ -19,3 +19,66 @@ psswd:chjenkinsm
 Nagios
 usname:nagiosadmin
 psswd:nagios
+
+
+
+
+exp: Docker with aws
+in ec2 instance after connecting
+curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash - 
+sudo apt install -y nodejs 
+node -v 
+npm -v 
+sudo apt install git -y 
+npx create-react-app 22bd1a056b-app 
+cd 22bd1a056b-app
+nano src/welcome.js 
+ Paste the below code: 
+ 
+import React, { useState } from 'react'; 
+const WelcomeMessage = () => { 
+  const [name, setName] = useState(‘Lahari'); 
+  const [showMessage, setShowMessage] = useState(false); 
+  const handleButtonClick = () => { 
+    setShowMessage(true); 
+  }; 
+  return ( 
+    <div> 
+      <input 
+        type="text" 
+        value={name} 
+        onChange={(e) => setName(e.target.value)} 
+        placeholder="Enter your name" 
+      /> 
+      <button onClick={handleButtonClick}>Show Welcome Message</button> 
+      {showMessage && <p>Hi "{name}!!!" Welcome to Docker Image</p>} 
+    </div> 
+  ); 
+}; 
+export default WelcomeMessage; 
+
+Install Docker 
+ sudo apt update 
+ sudo apt install docker.io -y 
+ sudo systemctl start docker 
+ sudo systemctl enable docker 
+ docker –version 
+
+
+nano Dockerfile 
+FROM node:16 
+WORKDIR /app 
+COPY . . 
+RUN npm install 
+RUN npm run build 
+RUN npm install -g serve 
+EXPOSE 3000 
+CMD ["serve", "-s", "build", "-l", "3000"] 
+
+nano .dockerignore
+node_modules
+build
+
+sudo docker build -t 22bd1a056b-react-app 
+sudo docker run -d -p 3000:3000 22bd1a056b-react-app 
+Visit: http://<your-ec2-ip>:3000
