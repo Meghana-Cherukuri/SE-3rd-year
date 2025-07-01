@@ -1,1 +1,60 @@
-SE class
+exp: IAM s3 full,read only access
+aws s3 ls s3://YOUR_BUCKET_NAME
+echo "test file" > testfile.txt 
+aws s3 cp testfile.txt s3://feedback-app-static-site/ 
+aws s3 rm s3://YOUR_BUCKET_NAME/filename
+
+exp: DynamoDB CRUD
+{ 
+  "rollno": { "S": "1" }, 
+  "name": { "S": "Anjali" }, 
+  "subject": { "S": "Math" }, 
+  "rating": { "N": "4" } 
+}
+
+Type this in CloudShell: python3 
+1.
+import boto3  
+dynamodb = boto3.resource('dynamodb')  
+table = dynamodb.Table('22bd1a056b_exp9')  
+response = table.scan()  
+items = response['Items']  
+# Sort by name  
+sorted_items = sorted(items, key=lambda x: x['name'])  
+for i in sorted_items:  
+print(i)  
+ 
+We can see the names printed in alphabetical order. 
+2.
+count = sum(1 for item in items if item['rating'] == 5) 
+print("Rating 5 count:", count)  
+ 
+The count of the members whose rating is 5 is shown: 
+
+3. Average rating of each subject 
+from collections import defaultdict 
+subject_rating = defaultdict(list) 
+for item in items: 
+    subject_rating[item['subject']].append(item['rating']) 
+for subject, ratings in subject_rating.items(): 
+    avg = sum(ratings) / len(ratings) 
+    print(f"{subject} average rating: {avg}") 
+
+4.exit()
+
+5.To delete such duplicates: 
+Run this code in CloudShell: 
+import boto3 
+dynamodb = boto3.resource('dynamodb') 
+table = dynamodb.Table('22bd1a056b_exp9') 
+response = table.scan() 
+items = response['Items'] 
+seen = set() 
+for item in items: 
+    ident = (item['name'], item['subject'], int(item['rating'])) 
+    if ident in seen: 
+        print(f"Deleting duplicate: {item}") 
+        table.delete_item(Key={'rollno': item['rollno']}) 
+    else: 
+        seen.add(ident)
+
