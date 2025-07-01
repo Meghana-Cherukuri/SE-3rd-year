@@ -1,1 +1,181 @@
-hello world
+exp: cloudfront
+mkdir lambda-feedback
+cd lambda-feedback
+npm init -y
+npm install @aws-sdk/client-dynamodb bcryptjs
+index.mjs in vs code
+
+import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb"; 
+const REGION = "eu-north-1"; 
+const client = new DynamoDBClient({ region: REGION }); 
+export const handler = async (event) => { 
+  // For handling preflight OPTIONS request 
+  if (event.requestContext?.http?.method === "OPTIONS") { 
+    return { 
+      statusCode: 200, 
+      headers: { 
+        "Access-Control-Allow-Origin": "*", 
+        "Access-Control-Allow-Headers": "Content-Type", 
+        "Access-Control-Allow-Methods": "OPTIONS,POST", 
+      }, 
+      body: "", 
+    }; 
+  } 
+ 
+  try { 
+    const body = JSON.parse(event.body); 
+    const { rollno, name, subject, rating } = body; 
+ 
+    const params = { 
+      TableName: "FeedbackTable", 
+      Item: { 
+        RollNo: { S: rollno }, 
+        Subject: { S: subject }, 
+        Name: { S: name }, 
+        Rating: { N: rating.toString() } 
+      } 
+    }; 
+ 
+    const command = new PutItemCommand(params); 
+    await client.send(command); 
+ 
+    return { 
+      statusCode: 200, 
+      headers: { 
+        "Access-Control-Allow-Origin": "*", 
+        "Access-Control-Allow-Headers": "Content-Type", 
+        "Access-Control-Allow-Methods": "OPTIONS,POST", 
+      }, 
+      body: JSON.stringify({ message: "Feedback submitted successfully" }), 
+    }; 
+  } catch (error) { 
+    return { 
+      statusCode: 500, 
+      headers: { 
+        "Access-Control-Allow-Origin": "*", 
+        "Access-Control-Allow-Headers": "Content-Type", 
+        "Access-Control-Allow-Methods": "OPTIONS,POST", 
+      }, 
+      body: JSON.stringify({ error: error.message }), 
+    }; 
+  } 
+};
+
+Add "type": "module" in package.json 
+
+Edit src/App.js to this: (Replace the Function URL with your Lambda function URL) 
+ 
+import React, { useState } from "react"; 
+const subjects = [ 
+  "Cloud Computing", 
+  "Internet of Things", 
+  "Front end web development", 
+  "Neural networks", 
+  "Competetive programming", 
+]; 
+ 
+function App() { 
+  const [rollno, setRollno] = useState(""); 
+  const [name, setName] = useState(""); 
+  const [subject, setSubject] = useState(subjects[0]); 
+  const [rating, setRating] = useState(1); 
+  const [message, setMessage] = useState(""); 
+ 
+  const handleSubmit = async (e) => { 
+    e.preventDefault(); 
+    setMessage("Submitting..."); 
+ 
+    const payload = { 
+      rollno, 
+      name, 
+      subject, 
+      rating: Number(rating), 
+    }; 
+ 
+    try { 
+      const response = await fetch(ss 
+        "https://YOUR_LAMBDA_FUNCTION_URL",  // Replace this with your Lambda Function URL 
+        { 
+          method: "POST", 
+          headers: { 
+            "Content-Type": "application/json", 
+          }, 
+          body: JSON.stringify(payload), 
+        } 
+      ); 
+ 
+      const data = await response.json(); 
+ 
+      if (response.ok) { 
+        setMessage("Feedback submitted successfully!"); 
+        // Clear form fields if you want: 
+        setRollno(""); 
+        setName(""); 
+        setSubject(subjects[0]); 
+        setRating(1); 
+      } else { 
+        setMessage(data.message || "Error submitting feedback."); 
+      } 
+    } catch (error) { 
+      setMessage("Network error: " + error.message); 
+    } 
+  }; 
+ 
+  return ( 
+    <div style={{ maxWidth: "400px", margin: "auto", padding: "20px" }}> 
+      <h2>Feedback Form</h2> 
+      <form onSubmit={handleSubmit}> 
+        <label>Roll No:</label><br /> 
+        <input 
+          type="text" 
+          value={rollno} 
+          onChange={(e) => setRollno(e.target.value)} 
+          required 
+        /> 
+        <br /><br /> 
+ 
+        <label>Name:</label><br /> 
+        <input 
+          type="text" 
+          value={name} 
+          onChange={(e) => setName(e.target.value)} 
+          required 
+        /> 
+        <br /><br /> 
+ 
+        <label>Subject:</label><br /> 
+        <select 
+          value={subject} 
+          onChange={(e) => setSubject(e.target.value)} 
+          required 
+        > 
+          {subjects.map((subj) => ( 
+            <option key={subj} value={subj}> 
+              {subj} 
+            </option> 
+          ))} 
+        </select> 
+        <br /><br /> 
+        <label>Rating:</label><br /> 
+        <select 
+          value={rating} 
+          onChange={(e) => setRating(e.target.value)} 
+          required 
+        > 
+          {[1, 2, 3, 4, 5].map((rate) => ( 
+            <option key={rate} value={rate}> 
+              {rate} 
+            </option> 
+          ))} 
+        </select> 
+        <br /><br /> 
+ 
+        <button type="submit">Submit Feedback</button> 
+      </form> 
+ 
+      <p>{message}</p> 
+    </div> 
+  ); 
+} 
+
+npm run build
